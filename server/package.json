@@ -1,0 +1,13 @@
+{
+  "name": "union-demo-server",
+  "version": "1.0.0",
+  "description": "工会服务平台后端API",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
