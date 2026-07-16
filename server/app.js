@@ -1,42 +1,64 @@
 const express = require('express');
 const cors = require('cors');
-const { products } = require('./data');
+const pool = require('./db');
 
 const app = express();
 
-// 开启CORS允许跨域
 app.use(cors());
 app.use(express.json());
 
-// 获取商品列表
 app.get('/api/products', (req, res) => {
-  res.json({ success: true, data: products });
+  pool.query('SELECT * FROM products', (error, results) => {
+    if (error) {
+      res.status(500).json({ success: false, message: '查询失败' });
+    } else {
+      res.json({ success: true, data: results });
+    }
+  });
 });
 
-// 获取单个商品详情
 app.get('/api/products/:id', (req, res) => {
   const id = parseInt(req.params.id);
-  const product = products.find(p => p.id === id);
-  if (product) {
-    res.json({ success: true, data: product });
-  } else {
-    res.status(404).json({ success: false, message: '商品不存在' });
-  }
+  pool.query('SELECT * FROM products WHERE id = ?', [id], (error, results) => {
+    if (error) {
+      res.status(500).json({ success: false, message: '查询失败' });
+    } else if (results.length === 0) {
+      res.status(404).json({ success: false, message: '商品不存在' });
+    } else {
+      res.json({ success: true, data: results[0] });
+    }
+  });
 });
 
-// 提交订单
+app.get('/api/user', (req, res) => {
+  pool.query('SELECT * FROM users WHERE id = 1', (error, results) => {
+    if (error) {
+      res.status(500).json({ success: false, message: '查询失败' });
+    } else if (results.length === 0) {
+      res.status(404).json({ success: false, message: '用户不存在' });
+    } else {
+      res.json({ success: true, data: results[0] });
+    }
+  });
+});
+
 app.post('/api/order', (req, res) => {
-  setTimeout(() => {
-    const orderId = 'NO.' + Date.now();
-    res.json({ 
-      success: true, 
-      orderId: orderId,
-      message: '下单成功'
-    });
-  }, 1000);
+  const { productId, totalAmount } = req.body;
+  const orderNo = 'NO.' + Date.now();
+  const userId = 1;
+
+  pool.query('INSERT INTO orders (order_no, user_id, product_ids, total_amount, status) VALUES (?, ?, ?, ?, ?)',
+    [orderNo, userId, JSON.stringify([productId]), totalAmount, 'completed'],
+    (error) => {
+      if (error) {
+        res.status(500).json({ success: false, message: '下单失败' });
+      } else {
+        res.json({ success: true, orderId: orderNo, message: '下单成功' });
+      }
+    }
+  );
 });
 
-// 监听 0.0.0.0 以允许局域网访问
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`后端服务已启动: http://0.0.0.0:${PORT}`);
